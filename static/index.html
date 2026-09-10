@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Buscador de tutores — Kodland</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #fff; --ink: #16181d; --ink-soft: #5b6472; --ink-faint: #8b93a1;
+    --line: #e3e6eb; --accent: #2f6df6; --accent-soft: #eaf0fe;
+    --ok: #1f7a4d; --ok-soft: #e6f4ec; --warn: #9a5b00; --warn-soft: #fdf1de;
+    --bad: #a3323b; --bad-soft: #fdecee;
+    --radius: 10px; --shadow: 0 1px 2px rgba(16,20,28,.05), 0 4px 16px rgba(16,20,28,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161a; --panel: #1c1f25; --ink: #e9ecf1; --ink-soft: #a3acbb; --ink-faint: #767f8e;
+      --line: #2b2f38; --accent: #6f9bff; --accent-soft: #1e2740;
+      --ok: #6ed49b; --ok-soft: #16301f; --warn: #e8b562; --warn-soft: #322512;
+      --bad: #f2909a; --bad-soft: #341a1d;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 28px 20px 80px; }
+  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 22px; }
+  h1 { font-size: 21px; margin: 0; letter-spacing: -.01em; font-weight: 640; }
+  .sub { color: var(--ink-faint); font-size: 13px; }
+  .who { margin-left: auto; font-size: 13px; color: var(--ink-soft); display: flex; align-items: center; gap: 10px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .panel + .panel { margin-top: 18px; }
+  .pad { padding: 20px; }
+  h2.blk { margin: 0 0 4px; font-size: 16px; font-weight: 620; }
+  p.lede { margin: 0 0 14px; color: var(--ink-soft); font-size: 13.5px; max-width: 66ch; }
+
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  input[type=text], input[type=password], input[type=time], input[type=number], input[type=date], select {
+    font: inherit; color: var(--ink); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; min-width: 0; }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: var(--accent); }
+  button { font: inherit; font-weight: 550; cursor: pointer; border-radius: 8px; border: 1px solid transparent;
+    padding: 9px 16px; background: var(--accent); color: #fff; transition: filter .12s; }
+  button:hover:not(:disabled) { filter: brightness(1.08); }
+  button:disabled { opacity: .55; cursor: default; }
+  button.ghost { background: transparent; color: var(--ink-soft); border-color: var(--line); }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 14px; }
+  label.field { display: grid; gap: 5px; font-size: 12.5px; color: var(--ink-soft); font-weight: 550; }
+  label.field .hint { font-weight: 400; color: var(--ink-faint); font-size: 11.5px; }
+  .field-wide { grid-column: 1 / -1; }
+  details.adv { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 14px; }
+  details.adv summary { cursor: pointer; font-size: 13px; color: var(--ink-soft); font-weight: 550; }
+  details.adv .grid { margin-top: 14px; }
+  .check { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--ink-soft); }
+  .check input { margin-top: 3px; }
+  .actions { margin-top: 18px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+  /* tarjeta de grupo resuelto */
+  .gcard { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; margin-top: 14px; background: var(--bg); }
+  .gcard h3 { margin: 0 0 8px; font-size: 14.5px; font-weight: 620; display: flex; gap: 9px; align-items: center; flex-wrap: wrap; }
+  .gfacts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 18px; font-size: 13px; }
+  .gfacts div span { display: block; color: var(--ink-faint); font-size: 11.5px; font-weight: 550;
+    text-transform: uppercase; letter-spacing: .04em; }
+  .gfacts div b { font-weight: 600; }
+
+  .summary { display: flex; gap: 22px; flex-wrap: wrap; align-items: baseline; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+  .stat b { font-size: 22px; font-weight: 640; letter-spacing: -.02em; }
+  .stat span { color: var(--ink-faint); font-size: 12.5px; display: block; }
+  .askfor { margin-left: auto; text-align: right; font-size: 13px; color: var(--ink-soft); }
+
+  ul.cards { list-style: none; margin: 0; padding: 0; }
+  ul.cards li { padding: 15px 20px; border-bottom: 1px solid var(--line); display: grid; gap: 8px; }
+  ul.cards li:last-child { border-bottom: 0; }
+  .who-line { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .rank { width: 22px; color: var(--ink-faint); font-variant-numeric: tabular-nums; font-size: 13px; }
+  .name { font-weight: 600; }
+  a.name { color: var(--ink); text-decoration: none; border-bottom: 1px solid transparent; }
+  a.name:hover { color: var(--accent); border-bottom-color: currentColor; }
+  a.name::after { content: "↗"; font-size: 10px; margin-left: 4px; opacity: .5;
+    vertical-align: super; font-weight: 400; }
+  .gcard h3 a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--line); }
+  .gcard h3 a:hover { color: var(--accent); border-bottom-color: currentColor; }
+  .meta { color: var(--ink-soft); font-size: 13px; display: flex; gap: 14px; flex-wrap: wrap; }
+  .meta b { color: var(--ink); font-weight: 600; }
+  .tag { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 20px;
+    background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+  .tag.ok { background: var(--ok-soft); color: var(--ok); }
+  .tag.warn { background: var(--warn-soft); color: var(--warn); }
+  .tag.bad { background: var(--bad-soft); color: var(--bad); }
+  .load { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-soft); }
+  .bar { width: 90px; height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .why { font-size: 12.5px; color: var(--ink-soft); }
+  .why code { background: var(--bg); padding: 1px 5px; border-radius: 4px; font-size: 11.5px; }
+
+  .empty { padding: 34px 20px; text-align: center; color: var(--ink-soft); }
+  .empty b { display: block; color: var(--ink); margin-bottom: 5px; font-size: 15px; }
+  .msg { padding: 12px 16px; border-radius: 8px; font-size: 13.5px; margin-top: 14px;
+    white-space: pre-wrap; line-height: 1.5; }
+  .msg.err { background: var(--bad-soft); color: var(--bad); }
+  .msg.info { background: var(--accent-soft); color: var(--accent); }
+  .msg.warn { background: var(--warn-soft); color: var(--warn); }
+  .note { font-size: 12.5px; color: var(--ink-faint); padding: 12px 20px; border-top: 1px solid var(--line); }
+  details.diag { padding: 12px 20px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--ink-soft); }
+  details.diag pre { overflow-x: auto; background: var(--bg); padding: 10px; border-radius: 8px; font-size: 11.5px; }
+  h2.sect { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-faint);
+    margin: 0; padding: 14px 20px 8px; font-weight: 640; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--line);
+    border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .hidden { display: none !important; }
+  ul.warns { margin: 10px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--warn); }
+  ul.warns li { margin-bottom: 3px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>Buscador de tutores</h1>
+      <div class="sub">Pegá el grupo y te digo quién puede dictarlo.</div>
+    </div>
+    <div class="who" id="who"></div>
+  </header>
+
+  <!-- ── Token ─────────────────────────────────────────── -->
+  <div class="panel" id="gate">
+    <div class="pad">
+      <h2 class="blk">Conectar con el BackOffice</h2>
+      <p class="lede">Pegá tu token JWT. Se guarda solo en este navegador (se borra al cerrar la
+        pestaña), nunca en el servidor, y no se envía a ningún sitio que no sea el API de Kodland.</p>
+      <div class="row">
+        <input type="password" id="token" placeholder="eyJ0eXAiOiJKV1Qi..." style="flex:1; min-width:300px" autocomplete="off">
+        <button id="btnAuth">Conectar</button>
+      </div>
+      <div id="gateMsg"></div>
+    </div>
+  </div>
+
+  <!-- ── App ───────────────────────────────────────────── -->
+  <div class="panel hidden" id="app">
+    <div class="pad">
+      <h2 class="blk">El grupo</h2>
+      <p class="lede">Pegá el enlace y listo: de ahí salen curso, día, hora, duración,
+        zona horaria y sucursal, directo del API.</p>
+
+      <div class="grid">
+        <label class="field field-wide">
+          Enlace del grupo
+          <input type="text" id="gLink" autofocus autocomplete="off"
+                 placeholder="https://bo.kodland.org/groups/72219">
+          <span class="hint">También acepta el id suelto (<code>72219</code>), el markdown
+            <code>[nombre](enlace)</code>, o el nombre del grupo si no tenés el enlace a mano.</span>
+        </label>
+      </div>
+
+      <div class="actions">
+        <button id="btnSearchTop">Buscar tutores</button>
+        <button class="ghost" id="btnResolve">Solo leer el grupo</button>
+        <button class="ghost" id="btnClear">Limpiar</button>
+        <span id="resolveState" class="sub"></span>
+      </div>
+
+      <div id="groupCard"></div>
+      <div id="groupMsg"></div>
+
+      <details class="adv" id="manualBox">
+        <summary>Búsqueda manual (sin grupo)</summary>
+        <div class="grid">
+          <label class="field field-wide">
+            Curso
+            <input type="text" id="courseSearch" placeholder="Filtrar: Minecraft, Python, Scratch, o el id…" autocomplete="off">
+            <select id="course" size="1"></select>
+            <span class="hint" id="courseHint"></span>
+          </label>
+          <label class="field">Día<select id="weekday"></select></label>
+          <label class="field">Hora de inicio<input type="time" id="startTime" value="09:00" step="300"></label>
+          <label class="field">Duración<select id="duration"></select></label>
+          <label class="field">
+            Zona horaria
+            <select id="timezone"></select>
+            <span class="hint">La zona en la que das la hora</span>
+          </label>
+        </div>
+      </details>
+
+      <details class="adv">
+        <summary>Opciones avanzadas</summary>
+        <div class="grid">
+          <label class="field">
+            Colchón entre clases
+            <input type="number" id="buffer" value="0" min="0" max="60" step="5">
+            <span class="hint">Minutos libres antes y después</span>
+          </label>
+          <label class="field">
+            Tope de grupos por tutor
+            <input type="number" id="maxGroups" placeholder="sin tope" min="1" max="60">
+            <span class="hint">Descarta a quien ya lo alcanzó</span>
+          </label>
+          <label class="field">
+            Semana de referencia
+            <input type="date" id="refDate">
+            <span class="hint">Para resolver horario de verano</span>
+          </label>
+        </div>
+        <div class="grid" style="margin-top:14px">
+          <label class="check">
+            <input type="checkbox" id="filterBranch" checked>
+            <span>Solo tutores de la <b>sucursal del grupo</b> (GCC, etc.)</span>
+          </label>
+          <label class="check">
+            <input type="checkbox" id="showExcluded">
+            <span>Mostrar también tutores <b>sin el curso asignado</b>
+              <span class="hint">Diagnóstico: la búsqueda normal solo considera
+              quienes tienen el curso habilitado. Actívalo si querés saber por qué
+              alguien no aparece.</span></span>
+          </label>
+        </div>
+      </details>
+
+      <div class="actions">
+        <button id="btnSearch">Buscar tutores</button>
+        <span id="searchState" class="sub"></span>
+      </div>
+      <div id="appMsg"></div>
+    </div>
+  </div>
+
+  <div id="results"></div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const WEEKDAYS = ["lunes","martes","miércoles","jueves","viernes","sábado","domingo"];
+const COMMON_TZ = ["Asia/Riyadh","America/Bogota","America/Mexico_City","America/Lima",
+  "America/Santiago","America/Argentina/Buenos_Aires","America/Sao_Paulo","America/New_York",
+  "Europe/Madrid","Europe/Warsaw","Europe/Istanbul","Asia/Singapore","Asia/Jakarta","UTC"];
+let COURSES = [];
+let GROUP = null;          // grupo resuelto
+let CHOSEN_COURSE = null;  // curso elegido cuando el título es ambiguo
+
+/* ---------- utilidades ---------- */
+function msg(el, text, kind) { el.innerHTML = text ? `<div class="msg ${kind||'info'}">${text}</div>` : ""; }
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------- sesion ----------
+   El servidor no guarda el token de nadie: cada quien guarda el suyo en el
+   navegador (sessionStorage, se borra solo al cerrar la pestaña) y se manda
+   con cada pedido. Asi el mismo servidor puede atender a varias personas a
+   la vez sin mezclar sus tokens. */
+function getAuth() {
+  try {
+    const raw = sessionStorage.getItem("kt_auth");
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+function setAuth(auth) {
+  try {
+    if (auth) sessionStorage.setItem("kt_auth", JSON.stringify(auth));
+    else sessionStorage.removeItem("kt_auth");
+  } catch (e) { /* modo privado u otro bloqueo: se sigue pidiendo el token cada vez */ }
+}
+async function api(path, opts) {
+  opts = opts || {};
+  const auth = getAuth();
+  if (auth && auth.token) {
+    opts = { ...opts, headers: { ...(opts.headers || {}), "Authorization": `Bearer ${auth.token}` } };
+  }
+  const res = await fetch(path, opts);
+  const data = await res.json().catch(() => ({ error: "Respuesta ilegible del servidor." }));
+  if (!res.ok) throw Object.assign(new Error(data.error || res.statusText), data);
+  return data;
+}
+function localFor(mow, offsetMinutes) {
+  const W = 10080, m = ((mow + (offsetMinutes||0)) % W + W) % W;
+  const wd = Math.floor(m/1440), r = m%1440;
+  return `${WEEKDAYS[wd]} ${String(Math.floor(r/60)).padStart(2,"0")}:${String(r%60).padStart(2,"0")}`;
+}
+function offsetLabel(mins) {
+  if (mins == null) return "";
+  const s = mins < 0 ? "-" : "+", a = Math.abs(mins);
+  return `UTC${s}${String(Math.floor(a/60)).padStart(2,"0")}:${String(a%60).padStart(2,"0")}`;
+}
+function daysAgo(iso) {
+  if (!iso) return null;
+  const t = new Date(iso);
+  return isNaN(t) ? null : Math.floor((Date.now() - t.getTime()) / 86400000);
+}
+
+/* ---------- arranque ---------- */
+function initStaticFields() {
+  $("weekday").innerHTML = WEEKDAYS.map((d,i) => `<option value="${i}">${d}</option>`).join("");
+  $("duration").innerHTML = [30,40,45,50,58,60,75,90,120].map(d =>
+    `<option value="${d}"${d===60?" selected":""}>${d} min</option>`).join("");
+  const guess = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch(e) { return "UTC"; } })();
+  const tzs = [...new Set([...COMMON_TZ, guess])].sort();
+  $("timezone").innerHTML = tzs.map(tz => `<option value="${tz}"${tz===guess?" selected":""}>${tz}</option>`).join("");
+  $("refDate").value = new Date().toISOString().slice(0,10);
+}
+
+function refreshStatus() {
+  const auth = getAuth();
+  if (auth && auth.token) {
+    $("gate").classList.add("hidden");
+    $("app").classList.remove("hidden");
+    $("who").innerHTML = `<span>${esc(auth.user?.email||"")}</span><button class="ghost" id="btnOut">Salir</button>`;
+    $("btnOut").onclick = () => { setAuth(null); location.reload(); };
+    loadCourses();
+  } else {
+    $("gate").classList.remove("hidden");
+    $("app").classList.add("hidden");
+    $("who").innerHTML = "";
+  }
+}
+
+async function loadCourses() {
+  try {
+    const data = await api("/api/courses");
+    COURSES = data.courses || [];
+    renderCourses("");
+    $("courseHint").textContent = `${COURSES.length} cursos en el catálogo`;
+  } catch (e) { $("courseHint").textContent = "No se pudo cargar el catálogo."; }
+}
+
+function renderCourses(filter) {
+  const f = filter.trim().toLowerCase();
+  const list = f ? COURSES.filter(c => (c.title||"").toLowerCase().includes(f) || String(c.id) === f) : COURSES;
+  const shown = list.slice(0, 300);
+  $("course").size = Math.min(Math.max(shown.length,1), 8);
+  $("course").innerHTML = shown.length
+    ? shown.map(c => `<option value="${c.id}">${esc(c.title)}</option>`).join("")
+    : `<option value="">— ningún curso coincide —</option>`;
+  syncDuration();
+}
+
+function syncDuration() {
+  const course = COURSES.find(c => String(c.id) === String($("course").value));
+  if (!course) return;
+  const opts = new Set([30,40,45,50,58,60,75,90,120]);
+  (course.durations||[]).forEach(d => opts.add(d));
+  const want = course.durations?.length ? course.durations[0] : Number($("duration").value) || 60;
+  $("duration").innerHTML = [...opts].sort((a,b)=>a-b).map(d =>
+    `<option value="${d}"${d===want?" selected":""}>${d} min${(course.durations||[]).includes(d)?" — del curso":""}</option>`).join("");
+  const bits = [];
+  if (course.durations?.length) bits.push(`duraciones: ${course.durations.join(" / ")} min`);
+  if (course.age_range) bits.push(`edades ${course.age_range}`);
+  if (course.region) bits.push(course.region);
+  if (course.status) bits.push(course.status);
+  $("courseHint").textContent = bits.join(" · ");
+}
+
+/* ---------- resolver grupo ---------- */
+async function resolveGroup() {
+  const link = $("gLink").value.trim();
+  if (!link) { msg($("groupMsg"), "Pegá el enlace del grupo.", "err"); return null; }
+  $("btnResolve").disabled = true;
+  $("resolveState").innerHTML = `<span class="spinner"></span> leyendo…`;
+  msg($("groupMsg"), "");
+  try {
+    const data = await api("/api/group", { method:"POST",
+      headers:{"Content-Type":"application/json"}, body: JSON.stringify({ link }) });
+    GROUP = data.group; CHOSEN_COURSE = GROUP.course_id || null;
+    renderGroupCard();
+    return GROUP;
+  } catch (e) {
+    if (e.needs_token) { setAuth(null); refreshStatus(); msg($("gateMsg"), "El token venció. Pegá uno nuevo.", "err"); }
+    else msg($("groupMsg"), esc(e.message), "err");
+    return null;
+  } finally { $("btnResolve").disabled = false; $("resolveState").textContent = ""; }
+}
+
+function renderGroupCard() {
+  const g = GROUP;
+  if (!g) { $("groupCard").innerHTML = ""; return; }
+  const tags = [];
+  if (g.source === "api") tags.push(`<span class="tag ok">leído del API</span>`);
+  else tags.push(`<span class="tag warn">deducido del nombre</span>`);
+  if (g.unassigned === true) tags.push(`<span class="tag">sin asignar</span>`);
+  else if (g.current_teacher_name) {
+    const actual = g.current_teacher_url
+      ? `<a href="${esc(g.current_teacher_url)}" target="_blank" rel="noopener"
+           style="color:inherit">${esc(g.current_teacher_name)}</a>`
+      : esc(g.current_teacher_name);
+    tags.push(`<span class="tag">actual: ${actual}</span>`);
+  }
+  if (g.is_archive) tags.push(`<span class="tag bad">archivado</span>`);
+
+  const facts = [];
+  const push = (label, value) => { if (value) facts.push(`<div><span>${label}</span><b>${value}</b></div>`); };
+  push("Curso", g.course_name ? esc(g.course_name) + (g.course_id ? ` <span style="color:var(--ink-faint)">#${g.course_id}</span>` : "") : null);
+  push("Sesiones", g.sessions?.length ? g.sessions.map(s => esc(s.label)).join(" + ") : null);
+  push("Duración", g.duration_minutes ? g.duration_minutes + " min" : null);
+  push("Zona horaria", esc(g.timezone || ""));
+  push("Sucursal", esc(g.branch_title || ""));
+  push("Idioma", esc(g.language || ""));
+  push("Edades", (g.age_min != null) ? `${g.age_min}–${g.age_max}` : null);
+  push("Cupo", g.max_students ? g.max_students + " estudiantes" : null);
+
+  let picker = "";
+  if (!g.course_id && (g.course_options||[]).length) {
+    picker = `<label class="field" style="margin-top:14px">
+      Elegí el curso (${g.course_options.length} posibles)
+      <select id="coursePick">${g.course_options.map(o =>
+        `<option value="${o.id}" data-dur="${o.default_duration||60}">${esc(o.title)}${
+          o.groups ? ` — lo usan ${o.groups} grupo${o.groups===1?"":"s"}` : ""}</option>`).join("")}</select>
+      <span class="hint">Ordenados por cuántos grupos de la sucursal usan cada uno.
+        Pegá el enlace del grupo para resolverlo sin ambigüedad.</span>
+    </label>`;
+  }
+
+  const warns = (g.warnings||[]).length
+    ? `<ul class="warns">${g.warnings.map(w => `<li>${esc(w)}</li>`).join("")}</ul>` : "";
+
+  const titulo = g.group_url
+    ? `<a href="${esc(g.group_url)}" target="_blank" rel="noopener">${esc(g.title || "Grupo")}</a>`
+    : esc(g.title || "Grupo");
+
+  $("groupCard").innerHTML = `<div class="gcard">
+    <h3>${titulo}${tags.join(" ")}</h3>
+    <div class="gfacts">${facts.join("")}</div>
+    ${picker}${warns}
+  </div>`;
+
+  if ($("coursePick")) {
+    CHOSEN_COURSE = Number($("coursePick").value);
+    $("coursePick").onchange = (e) => { CHOSEN_COURSE = Number(e.target.value); };
+  }
+}
+
+/* ---------- búsqueda ---------- */
+async function search() {
+  const link = $("gLink").value.trim();
+  const useGroup = !!link;
+
+  const payload = {
+    buffer_minutes: Number($("buffer").value || 0),
+    max_groups: $("maxGroups").value || null,
+    reference_date: $("refDate").value || null,
+    show_course_excluded: $("showExcluded").checked,
+    filter_by_branch: $("filterBranch").checked
+  };
+
+  if (useGroup) {
+    payload.link = link;
+    if (CHOSEN_COURSE) payload.course_id = CHOSEN_COURSE;
+  } else {
+    const courseId = $("course").value;
+    if (!courseId) { msg($("appMsg"), "Pegá un grupo arriba, o elegí un curso en la búsqueda manual.", "err"); return; }
+    payload.course_id = Number(courseId);
+    payload.weekday = Number($("weekday").value);
+    payload.start_time = $("startTime").value || "09:00";
+    payload.duration_minutes = Number($("duration").value);
+    payload.timezone = $("timezone").value;
+  }
+
+  $("btnSearch").disabled = true; $("btnSearchTop").disabled = true;
+  const state = useGroup ? $("resolveState") : $("searchState");
+  state.innerHTML = `<span class="spinner"></span> consultando el BackOffice…`;
+  msg($("appMsg"), ""); msg($("groupMsg"), ""); $("results").innerHTML = "";
+
+  try {
+    const data = await api("/api/search", { method:"POST",
+      headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload) });
+    if (data.needs_input) {
+      GROUP = data.group; CHOSEN_COURSE = null; renderGroupCard();
+      msg($("groupMsg"), "No pude determinar el curso. Elegilo arriba y volvé a buscar, o pegá el enlace del grupo.", "warn");
+      return;
+    }
+    if (data.group) { GROUP = data.group; CHOSEN_COURSE = GROUP.course_id || CHOSEN_COURSE; renderGroupCard(); }
+    render(data);
+    $("results").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (e) {
+    if (e.needs_token) { setAuth(null); refreshStatus(); msg($("gateMsg"), "El token venció. Pegá uno nuevo.", "err"); }
+    else msg(useGroup ? $("groupMsg") : $("appMsg"), esc(e.message), "err");
+  } finally {
+    $("btnSearch").disabled = false; $("btnSearchTop").disabled = false;
+    $("searchState").textContent = ""; $("resolveState").textContent = "";
+  }
+}
+
+/* ---------- render de resultados ---------- */
+function render(data) {
+  const req = data.request, d = data.diagnostics || {}, s = data.summary || {};
+  const sessions = req.sessions || [];
+  const out = [];
+
+  out.push(`<div class="panel"><div class="summary">
+    <div class="stat"><b>${s.eligible ?? 0}</b><span>pueden dictarlo</span></div>
+    <div class="stat"><b>${s.rejected ?? 0}</b><span>descartados</span></div>
+    <div class="stat"><b>${d.verified ?? 0}</b><span>verificados a fondo</span></div>
+    <div class="askfor">
+      <b>${sessions.map(x => esc(x.weekday_name + " " + x.start_local)).join(" + ")}</b>
+      · ${req.duration_minutes} min · ${esc(req.timezone)}<br>
+      <span style="color:var(--ink-faint)">${sessions.map(x => esc(x.start_utc_label)).join(" + ")} UTC${
+        d.business_branch ? " · sucursal " + d.business_branch : ""}</span><br>
+      <span class="tag ok">solo tutores con el curso ${esc(req.course)} habilitado</span>
+    </div>
+  </div>`);
+
+  if ((data.eligible||[]).length) {
+    out.push(`<h2 class="sect">Candidatos, del más libre al más cargado</h2><ul class="cards">`);
+    data.eligible.forEach((c,i) => out.push(cardHTML(c, req, i+1, true)));
+    out.push(`</ul>`);
+  } else {
+    out.push(`<div class="empty"><b>Ningún tutor puede tomar este grupo</b>
+      Mirá los descartados: el motivo suele apuntar al ajuste que lo destraba.</div>`);
+  }
+
+  if ((data.rejected||[]).length) {
+    const near = data.rejected.filter(c => c.blockers.length === 1);
+    out.push(`<details${near.length?" open":""}>
+      <summary style="cursor:pointer;padding:14px 20px;border-top:1px solid var(--line);
+        font-size:13px;color:var(--ink-soft);font-weight:550">
+        Descartados (${data.rejected.length})${near.length?` — ${near.length} falla por un solo motivo`:""}
+      </summary><ul class="cards">`);
+    data.rejected.slice(0,80).forEach(c => out.push(cardHTML(c, req, null, false)));
+    if (data.rejected.length > 80) out.push(`<li class="note">…y ${data.rejected.length-80} más.</li>`);
+    out.push(`</ul></details>`);
+  }
+
+  const notes = [];
+  if (d.truncated_shortlist) {
+    notes.push(`Se verificaron los ${d.verify_limit} tutores con menos carga de
+      ${d.truncated_shortlist + d.verify_limit} preseleccionados. Los ${d.truncated_shortlist}
+      restantes tenían más grupos, así que habrían quedado abajo — pero no se comprobaron.`);
+  }
+  if ((d.verify_errors||[]).length) {
+    notes.push(`${d.verify_errors.length} tutor(es) no se pudieron verificar y quedaron fuera:
+      ${d.verify_errors.slice(0,3).map(e => esc(e.name || e.tutor_id)).join(", ")}.`);
+  }
+  if (sessions.length > 1) {
+    notes.push(`El grupo tiene ${sessions.length} sesiones por semana. Solo se listan tutores
+      libres en <b>todas</b>.`);
+  }
+  if (s.excluded_by_course) {
+    notes.push(`${s.excluded_by_course} tutor(es) de la sucursal tienen el horario libre
+      pero <b>no tienen este curso asignado</b> en el BackOffice, así que el API no los
+      ofrece. Aparecen abajo marcados como no verificados: si alguno debería poder
+      dictarlo, hay que asignarle el curso.`);
+  }
+  if (notes.length) out.push(`<div class="note">${notes.join("<br><br>")}</div>`);
+
+  out.push(`<details class="diag"><summary>Cómo se llegó a esto</summary>
+    <p>Paso 1 — <code>availability_summary?course=${esc(req.course)}${
+      d.business_branch ? "&business_branch=" + d.business_branch : ""}</code>. Ese filtro
+    de curso es el catálogo propio de cada tutor: quien no lo tenga habilitado no
+    entra a la búsqueda. Preseleccionó
+    <b>${d.grid?.shortlisted ?? "?"}</b> tutores${
+      d.grid?.window_widened_minutes ? `, ensanchando la ventana ${d.grid.window_widened_minutes} min
+      porque la grilla del API asume clases de 90 minutos` : ""}.
+    Paso 2 — se verificó horario exacto y cruces reales de cada uno.
+    Semana de referencia ${esc(d.reference_date||"")} · ${d.elapsed_seconds ?? "?"} s.</p>
+    <pre>${esc(JSON.stringify(d.grid||{}, null, 2))}</pre></details></div>`);
+
+  $("results").innerHTML = out.join("");
+}
+
+function cardHTML(c, req, rank, eligible) {
+  const load = c.current_load ?? 0;
+  const cap = c.max_groups || Math.max(load, 10);
+  const pct = Math.min(100, Math.round(load/cap*100));
+  const confirmed = daysAgo(c.extra?.availability_confirmed_at);
+
+  const tags = [];
+  if (eligible && rank === 1) tags.push(`<span class="tag ok">mejor opción</span>`);
+  if (c.extra?.team_lead) tags.push(`<span class="tag">TL: ${esc(c.extra.team_lead)}</span>`);
+  if (confirmed != null && confirmed > 45)
+    tags.push(`<span class="tag warn">disponibilidad sin confirmar hace ${confirmed} d</span>`);
+  if (c.extra?.unverified)
+    tags.push(`<span class="tag warn">no verificado a fondo</span>`);
+  (c.blocker_labels||[]).forEach(b => tags.push(`<span class="tag bad">${esc(b)}</span>`));
+
+  const locals = c.utc_offset_minutes == null ? "—" : (req.sessions||[]).map(s =>
+    esc(localFor(s.start_utc_minute_of_week, c.utc_offset_minutes))).join(" + ");
+
+  const why = [];
+  if ((c.conflicts||[]).length)
+    why.push(`Se cruza con: ${c.conflicts.slice(0,4).map(x => `<code>${esc(x)}</code>`).join(" ")}${
+      c.conflicts.length>4 ? ` y ${c.conflicts.length-4} más` : ""}`);
+  (c.notes||[]).forEach(n => why.push(esc(n)));
+
+  // El nombre abre el perfil del tutor en el BackOffice, para verificar sin
+  // tener que buscarlo a mano.
+  const nombre = c.profile_url
+    ? `<a class="name" href="${esc(c.profile_url)}" target="_blank" rel="noopener"
+         title="Abrir su perfil en el BackOffice">${esc(c.name)}</a>`
+    : `<span class="name">${esc(c.name)}</span>`;
+
+  return `<li>
+    <div class="who-line">${rank?`<span class="rank">${rank}</span>`:""}
+      ${nombre}${tags.join(" ")}</div>
+    <div class="meta">
+      <span class="load"><span class="bar"><i style="width:${pct}%"></i></span>
+        <b>${load}</b> grupo${load===1?"":"s"}${c.max_groups?` / ${c.max_groups}`:""}</span>
+      <span>Su hora local: <b>${locals}</b></span>
+      <span>${esc(c.timezone||"?")} <span style="color:var(--ink-faint)">${offsetLabel(c.utc_offset_minutes)}</span></span>
+      <span style="color:var(--ink-faint)">id ${esc(c.tutor_id)}</span>
+    </div>
+    ${why.length?`<div class="why">${why.join(" · ")}</div>`:""}
+  </li>`;
+}
+
+/* ---------- eventos ---------- */
+$("btnAuth").onclick = async () => {
+  const token = $("token").value.trim();
+  if (!token) { msg($("gateMsg"), "Pegá el token.", "err"); return; }
+  $("btnAuth").disabled = true;
+  msg($("gateMsg"), `<span class="spinner"></span> verificando…`);
+  try {
+    const data = await api("/api/auth", { method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ token }) });
+    setAuth({ token, user: data.user });
+    $("token").value = ""; msg($("gateMsg"), ""); refreshStatus();
+  } catch (e) { msg($("gateMsg"), esc(e.message), "err"); }
+  finally { $("btnAuth").disabled = false; }
+};
+$("token").addEventListener("keydown", e => { if (e.key === "Enter") $("btnAuth").click(); });
+$("btnResolve").onclick = resolveGroup;
+$("btnSearchTop").onclick = search;
+$("btnClear").onclick = () => {
+  $("gLink").value = "";
+  GROUP = null; CHOSEN_COURSE = null;
+  $("groupCard").innerHTML = ""; msg($("groupMsg"), ""); $("results").innerHTML = "";
+  $("gLink").focus();
+};
+// Enter en cualquiera de los dos campos hace la busqueda completa, no solo leer.
+$("gLink").addEventListener("keydown", e => {
+  if (e.key === "Enter") { e.preventDefault(); search(); }
+});
+$("courseSearch").addEventListener("input", e => renderCourses(e.target.value));
+$("course").addEventListener("change", syncDuration);
+$("btnSearch").onclick = search;
+
+initStaticFields();
+refreshStatus();
+</script>
+</body>
+</html>
