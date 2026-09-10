@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "outputDirectory": "static",
   "rewrites": [
-    { "source": "/api/(?<route>.*)", "destination": "/api/index?route=$route" }
+    { "source": "/api/:route*", "destination": "/api/index?route=:route" }
   ],
   "functions": {
     "api/index.py": {
