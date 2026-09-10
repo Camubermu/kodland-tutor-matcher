@@ -1,8 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "outputDirectory": "static",
+  "rewrites": [
+    { "source": "/api/(?<route>.*)", "destination": "/api/index?route=$route" }
+  ],
   "functions": {
-    "api/*.py": {
+    "api/index.py": {
       "maxDuration": 60,
       "excludeFiles": "{test_*.py,__pycache__/**,static/**,.git/**}"
     }
