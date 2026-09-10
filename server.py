@@ -392,9 +392,10 @@ class Handler(BaseHTTPRequestHandler):
         """Determina la ruta logica del pedido.
 
         En local, `self.path` ya es la ruta real (p.ej. `/api/auth`). En
-        Vercel, una funcion "catch-all" (`api/[...route].py`) puede en cambio
-        recibir el sub-path via query string en vez de en el path literal;
-        esto lo recupera si hace falta, sin cambiar el comportamiento local.
+        Vercel, todas las rutas bajo `/api/*` llegan a `api/index.py` por un
+        rewrite (ver `vercel.json`) que manda el sub-path real como query
+        string (`?route=...`) en vez de en el path literal; esto lo recupera
+        si hace falta, sin cambiar el comportamiento local.
         """
         parsed = urlparse(self.path)
         route = parsed.path
