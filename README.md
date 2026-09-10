@@ -93,7 +93,7 @@ recomendaría a alguien que choca en la segunda.
 
 ### Opción 1: el link ya desplegado
 
-Sin instalar nada: **[abrir el buscador](VERCEL_DEPLOYMENT_URL)**. Pegás tu
+Sin instalar nada: **[abrir el buscador](https://kodland-tutor-matcher.vercel.app)**. Pegás tu
 token JWT del BackOffice en la interfaz y listo. El link es privado (repo y
 despliegue no son públicos); si alguien del equipo lo necesita, se le agrega
 acceso — ver [Desplegado en internet](#desplegado-en-internet) más abajo.
