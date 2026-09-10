@@ -11,6 +11,12 @@ en `Handler`), asi que el mismo codigo sirve para el modo local (donde
 Toda la logica real vive en `server.py` (el mismo modulo que usa el server
 local): esto solo la reexpone con el nombre que Vercel espera, para no
 duplicar nada entre el modo local y el desplegado.
+
+Importante: Vercel detecta la funcion buscando una declaracion real de
+`class handler(...)` en este archivo (analisis estatico, sin ejecutar el
+codigo). Un simple `from server import Handler as handler` NO alcanza: no
+lo reconoce como funcion valida y el build falla con "doesn't match any
+Serverless Functions". Por eso ademas de importar, se declara la subclase.
 """
 
 import sys
@@ -20,4 +26,8 @@ from pathlib import Path
 # en la raiz del repo, un nivel arriba de /api.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from server import Handler as handler  # noqa: E402,F401
+from server import Handler as _Handler  # noqa: E402
+
+
+class handler(_Handler):  # noqa: N801 - Vercel exige este nombre exacto
+    pass
